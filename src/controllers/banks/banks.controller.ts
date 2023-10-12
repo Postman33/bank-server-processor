@@ -25,7 +25,7 @@ export class BanksController {
       return await this.branchService.findBranchesInRadius(
         lat,
         lng,
-        radius,
+        radius*1000,
       );
     } catch (error) {
       throw new Error('Unable to fetch branches.');
