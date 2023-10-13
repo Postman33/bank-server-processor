@@ -1,8 +1,8 @@
 import { Body, Controller, Post } from "@nestjs/common";
-import { BranchService } from "../../services/branch/branch.service";
-import { Branch } from "../../entitiers/branch.entity";
-import {GraphManager} from "../../graph/graph_manager";
-import {Graph, GraphEdge, GraphNode} from "../../graph/systems";
+import { BranchService } from "../services/branch/branch.service";
+import { Branch } from "../entitiers/branch.entity";
+import {GraphManager} from "../graph/graph_manager";
+import {Graph, GraphEdge, GraphNode} from "../graph/systems";
 
 @Controller('banks')
 export class BanksController {
@@ -49,8 +49,8 @@ export class BanksController {
 
   @Post('shortest_path')
   async calculate_shortest_path(@Body('lat_me') lat: number, @Body('lng_me') lng: number) {
-    let graph = new Graph();
-    let graphManager = new GraphManager(graph);
+    const graph = new Graph();
+    const graphManager = new GraphManager(graph);
 
     // Добавляем узлы
     const node1 = new GraphNode(1, 10, 20);

@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Branch } from '../../entitiers/branch.entity';
-import { request } from 'express';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Branch } from "../../entitiers/branch.entity";
+
 const turf = require('@turf/turf');
 const graphFromOsm = require('graph-from-osm'); // Import module
 
@@ -118,8 +118,6 @@ export class BranchService {
       return graph;
     };
 
-    const gr = generateGraph(mySettings);
-
-    return gr;
+    return generateGraph(mySettings);
   }
 }

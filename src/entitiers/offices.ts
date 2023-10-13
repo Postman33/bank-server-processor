@@ -1,4 +1,6 @@
 import { Column, Entity, Point, PrimaryGeneratedColumn } from "typeorm";
+// TODO: Open Hours
+// TODO: Check other fields
 
 @Entity('offices')
 export class Office {
@@ -43,4 +45,10 @@ export class Office {
 
   @Column({ nullable: true })
   myBranch: boolean;
+
+
+  @Column({ nullable: true, type: 'double precision' })
+  loadFactor: number;
+
+
 }
