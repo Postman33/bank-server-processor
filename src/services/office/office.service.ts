@@ -1,11 +1,11 @@
-import { GeoJSON, Repository } from "typeorm";
-import { InjectRepository } from '@nestjs/typeorm';
+import {Repository} from "typeorm";
+import {InjectRepository} from '@nestjs/typeorm';
 import * as fs from 'fs';
-import * as path from 'path';
-import { Injectable } from "@nestjs/common";
-import { Office } from "../../entitiers/offices";
-import { Atm } from "../../entitiers/atms";
-import { Feature } from "@turf/turf";
+import {Injectable} from "@nestjs/common";
+import {Office} from "../../entitiers/offices";
+import { dijkstra } from "../../graph/algorithm/dijkstra";
+import {GraphNodeT, GraphPathT} from "../../graph/systems";
+
 const turf = require('@turf/turf');
 const graphFromOsm = require('graph-from-osm'); // Import module
 const measure = require("../../distance");
@@ -47,6 +47,62 @@ export class OfficeService {
     }
   }
 
+  euclideanDistance(point1: [number, number], point2: [number, number]): number {
+    const [x1, y1] = point1;
+    const [x2, y2] = point2;
+    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+  }
+
+  calculateDistance([x1, y1]: number[], [x2, y2]: number[]): number {
+    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+  }
+
+  searchNearest(lat: number, lon: number, nodes: any[]): any {
+    let nearestNode = null;
+    let minDistance = Infinity;
+
+    for (const node of nodes) {
+      const nodeCoordinates = node.geometry.coordinates; // предполагается, что у узла есть поле geometry с координатами
+      const distance = this.euclideanDistance(nodeCoordinates, [lon, lat]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestNode = node;
+      }
+    }
+
+    return nearestNode;
+  }
+
+  findNearestNode(graph: any, coord: number[]): any {
+    let nearestNode = null;
+    let minDistance = Infinity;
+
+    for (const node of Object.values(graph.nodes)) {
+      const { lon, lat } = node as { lon: number, lat: number };
+      const distance = this.calculateDistance(coord, [lon, lat]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestNode = node;
+      }
+    }
+
+    return nearestNode;
+  }
+
+  weightCalc(path: GraphPathT): number {
+    let totalTime = 0; // общее время в секундах
+
+    for (let i = 0; i < path.length - 1; ++i) {
+      const node = path[i];
+      if (node.distanceToNext && node.speed) {
+        const timeToNextNode = node.distanceToNext / node.speed;
+        totalTime += timeToNextNode;
+      }
+    }
+
+    return totalTime;
+  }
+
   async findOptimalOffice(lng: number, lat: number, radius: number): Promise<Office[]>{
     const offices: Office[] = await this.officeRepo
       .createQueryBuilder('office')
@@ -77,8 +133,6 @@ export class OfficeService {
     const bboxPolygon =turf.transformScale(turf.bboxPolygon(bbox),1.2);
     console.log(bboxPolygon);
 
-
-
     const mySettings = {                                         // Define my settings
       bbox: bbox,                          // Geographical rectangle
       highways: ["primary", "secondary", "tertiary", "residential"],     // Type of roads to consider
@@ -88,33 +142,20 @@ export class OfficeService {
 
     console.log(osmData);
     const graph = graphFromOsm.osmDataToGraph(osmData)
-    console.log("Your graph contains " + graph.features.length + " nodes ans links.");
-    for (const feature of graph.features){
-      if (feature.geometry.type !== 'LineString') continue
-      let coors = feature.geometry.coordinates
-      //console.log(measure(coors[0][0],coors[0][1], coors[coors.length - 1][0],coors[coors.length - 1][1]));
-      // 0[37.6120382,55.7588626],1[37.6121193,55.7587862],2[37.6124737,55.7584593]]
-      // m(0,1) + m(1,2) = distance
-      const distances=[]
-      for (let i = 0; i < coors.length - 2; i++){
-          distances.push(measure(coors[i][0],coors[i][1], coors[i+1][0],coors[i+1][1]))
-      }
-      let sum = 0
-      for (const el of distances){
-        sum+=Math.abs(el) // длина ребра
-      }
-      // TODO: Check measure
-      console.log(sum);
-      // create graph
-      // graph.addLink('coors[0][0],coors[0][1]', 'coors[coors.length - 1][0],coors[coors.length - 1][1]', {weight: sum});
-    }
+
     // TODO: функция определения ближайшего узла по координатам
     // function searchNearest(lat:number, lon: number) -> можно в самом конце соединить граф с начальной точкой
     // соединить location к ближайшему узлу
-
+    osmData.features
+    const nearestNode = this.searchNearest(lat, lng, osmData.features);
+    console.log(nearestNode);
 
     // соединить каждый офис с ближайшим узлом на грфафе
+    const officeToNodeMap: { [officeId: string]: any } = {};
 
+    for (const office of offices) {
+      officeToNodeMap[office.id] = this.findNearestNode(graph, office.location.coordinates);
+    }
 
     // let pathsLength = []
     // for (let office in offices){
@@ -125,12 +166,38 @@ export class OfficeService {
     // вернуть в виде LineString
     // https://ru.wikipedia.org/wiki/GeoJSON
 
-   fs.writeFileSync('graphdata.json',JSON.stringify(graph));
+    const pathsLength: { [officeId: string]: number } = {};
+    let shortestTime = Infinity;
+    let optimalOfficeId: string | null = null;
+    let optimalPath: any = null;
+
+    for (const officeId in officeToNodeMap) {
+      const startNode = nearestNode;  // ваша текущая позиция
+      const endNode = officeToNodeMap[officeId];  // узел ближайший к офису
+
+      // TODO: Вычислите путь от startNode до endNode.
+      // Я предполагаю, что у вас есть функция graph.shortpath(), которая делает это.
+      const path = dijkstra(graph, startNode, endNode);
+
+      const timeInPath = this.weightCalc(await path);
+      pathsLength[officeId] = timeInPath;
+
+      if (timeInPath < shortestTime) {
+        shortestTime = timeInPath;
+        optimalOfficeId = officeId;
+        optimalPath = path;
+      }
+    }
+
+    // Здесь optimalPath содержит наиболее короткий путь.
+    console.log("Оптимальный путь ведет к офису с ID:", optimalOfficeId);
+
+    fs.writeFileSync('graphdata.json',JSON.stringify(graph));
 
 
     return offices
 
+    // const lineStringResult = turf.lineString(optimalPath);
+    // return lineStringResult;
   }
-
-
 }
