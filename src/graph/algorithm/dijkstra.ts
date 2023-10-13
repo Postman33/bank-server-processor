@@ -1,28 +1,35 @@
-import {Graph, GraphNode, IGraph} from ".././systems";
+import {getEdgeWeight, getNeighbors, GraphNodeT, GraphPathT} from "../systems";
+import {PriorityQueue} from "../../container/priority_queue";
 
-export async function dijkstra(graph: IGraph, start: GraphNode): Promise<Map<number, number>> {
-    const distances: Map<number, number> = new Map();
-    const visited: Set<number> = new Set();
+export async function dijkstra(graph: any, start: GraphNodeT, end: GraphNodeT): Promise<GraphPathT> {
+    let distances: { [key: string]: number } = {};
+    let previous: { [key: string]: GraphNodeT | null } = {};
+    let queue = new PriorityQueue();
 
-    graph.nodes().forEach(node => distances.set(node.id, Infinity));
-    distances.set(start.id, 0);
+    distances[start.id] = 0;
+    queue.push(start, 0);
 
-    while (visited.size < graph.countOfNodes()) {
-        const currentNode = [...distances.entries()]
-            .filter(([nodeId, _]) => !visited.has(nodeId))
-            .sort((a, b) => a[1] - b[1])[0][0];
+    while (!queue.isEmpty()) {
+        let currentNode = queue.pop();
 
-        visited.add(currentNode);
+        if (currentNode!.id === end.id) {
+            let path: GraphPathT = [];
+            while (currentNode) {
+                path.unshift(currentNode);
+                currentNode = previous[currentNode.id] || null;
+            }
+            return path;
+        }
 
-        const neighbors = graph.getNeighbors(new GraphNode(currentNode, 0, 0));
-
-        for (const neighbor of neighbors) {
-            const newDist = distances.get(currentNode) + neighbor.weight;
-            if (newDist < distances.get(neighbor.to.id)) {
-                distances.set(neighbor.to.id, newDist);
+        for (const neighbor of getNeighbors(currentNode!, graph)) {
+            const alt = distances[currentNode!.id] + getEdgeWeight(currentNode!, neighbor);
+            if (alt < (distances[neighbor.id] || Infinity)) {
+                distances[neighbor.id] = alt;
+                previous[neighbor.id] = currentNode;
+                queue.push(neighbor, alt);
             }
         }
     }
 
-    return distances;
+    throw new Error("Путь не найден");
 }
