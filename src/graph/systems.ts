@@ -6,6 +6,16 @@ export class GraphEdge {
     constructor(public from: GraphNode, public to: GraphNode, public weight: number) {}
 }
 
+export interface IGraph {
+    addNode(node: GraphNode): void;
+    addEdge(edge: GraphEdge): void;
+    getNeighbors(node: GraphNode): GraphEdge[];
+    countOfNodes(): number;
+    countOfEdges(): number;
+    nodes(): GraphNode[];
+    edges(): GraphEdge[];
+}
+
 export class Graph {
     private mNodes: GraphNode[] = [];
     private mEdges: GraphEdge[] = [];

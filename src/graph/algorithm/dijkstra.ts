@@ -1,6 +1,6 @@
-import {Graph, GraphNode } from ".././systems";
+import {Graph, GraphNode, IGraph} from ".././systems";
 
-export async function dijkstra(graph: Graph, start: GraphNode): Promise<Map<number, number>> {
+export async function dijkstra(graph: IGraph, start: GraphNode): Promise<Map<number, number>> {
     const distances: Map<number, number> = new Map();
     const visited: Set<number> = new Set();
 

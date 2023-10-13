@@ -1,9 +1,13 @@
 import { Body } from "@nestjs/common";
-import {Graph, GraphEdge, GraphNode} from "./systems";
+import { IGraph, Graph, GraphEdge, GraphNode} from "./systems";
 import { dijkstra } from "./algorithm/dijkstra";
 
 export class GraphManager {
-    private m_graph: Graph = new Graph();
+    private readonly m_graph: IGraph;
+
+    constructor(graph: IGraph) {
+        this.m_graph = graph;
+    }
 
     async calculate_shortest_path(@Body('lat_me') lat: number, @Body('lng_me') lng: number) {
         try {
