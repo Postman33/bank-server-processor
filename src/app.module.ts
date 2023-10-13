@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { BanksController } from "./controllers/banks/banks.controller";
+import { BanksController } from "./controllers/banks.controller";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Branch } from "./entitiers/branch.entity";
 import { BranchService } from './services/branch/branch.service';
-import { AtmController } from './controllers/atm/atm.controller';
-import { OfficeController } from './controllers/office/office.controller';
+import { AtmController } from './controllers/atm.controller';
+import { OfficeController } from './controllers/office.controller';
 import { Atm } from "./entitiers/atms";
 import { Office } from "./entitiers/offices";
 import { Service } from "./entitiers/service";

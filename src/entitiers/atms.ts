@@ -1,6 +1,5 @@
 // atm.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Service } from './service';
+import { Entity, PrimaryGeneratedColumn, Column, Point } from "typeorm";
 
 @Entity()
 export class Atm {
@@ -10,15 +9,13 @@ export class Atm {
   @Column()
   address: string;
 
-  @Column('double precision')
-  latitude: number;
 
-  @Column('double precision')
-  longitude: number;
+  @Column({ type: 'geometry', nullable: true })
+  location: Point;
 
   @Column()
   allDay: boolean;
 
-  @OneToMany(() => Service, service => service.atm)
-  services: Service[];
+  @Column('json')
+  services: string;
 }
