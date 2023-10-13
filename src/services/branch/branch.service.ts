@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Branch } from '../../entitiers/branch.entity';
-import * as turf from '@turf/turf'
+import { request } from 'express';
+const turf = require('@turf/turf');
+const graphFromOsm = require('graph-from-osm'); // Import module
 
 @Injectable()
 export class BranchService {
@@ -12,17 +14,19 @@ export class BranchService {
   ) {}
 
   async findBranchesByServices(services: string[]): Promise<Branch[]> {
-    return this.branchRepository
-      .createQueryBuilder('branch')
-      //.where('branch.services @> :services', { services })
-      .select([
-        'branch.id',
-        'branch.name',
-        'branch.location',
-        'branch.services',
-        'branch.load',
-      ])
-      .getMany();
+    return (
+      this.branchRepository
+        .createQueryBuilder('branch')
+        //.where('branch.services @> :services', { services })
+        .select([
+          'branch.id',
+          'branch.name',
+          'branch.location',
+          'branch.services',
+          'branch.load',
+        ])
+        .getMany()
+    );
   }
 
   async findBranchesInRadius(
@@ -31,7 +35,7 @@ export class BranchService {
     radius: number,
   ): Promise<Branch[]> {
     return this.branchRepository
-      .createQueryBuilder("branch")
+      .createQueryBuilder('branch')
       .select([
         'branch.id',
         'branch.name',
@@ -55,9 +59,8 @@ export class BranchService {
     lng: number,
     radius: number,
   ): Promise<Branch[]> {
-
-    var tmp = await this.branchRepository
-      .createQueryBuilder("branch")
+    const tmp = await this.branchRepository
+      .createQueryBuilder('branch')
       .select([
         'branch.id',
         'branch.name',
@@ -72,44 +75,50 @@ export class BranchService {
           :radius
         )`,
         { lat, lng, radius },
-      ).getMany();
+      )
+      .getMany();
 
     console.log(JSON.stringify(tmp, null, 4));
 
     const coordinatesArray: any[] = [];
 
     for (const item of tmp) {
-        console.log(item);
-        if (item.location.coordinates) {
-            coordinatesArray.push(item.location.coordinates);
-            console.log(item.location.coordinates);
-        }
+      console.log(item);
+      if (item.location.coordinates) {
+        coordinatesArray.push(item.location.coordinates);
+        console.log(item.location.coordinates);
+      }
     }
 
-    var line = turf.lineString(coordinatesArray);
-    var bbox_my = turf.bbox(line);
-    var bboxPolygon = turf.bboxPolygon(bbox_my);
 
-    console.log(bbox_my); console.log(JSON.stringify(bboxPolygon, null, 4));
+    const line = turf.lineString(coordinatesArray);
+    const bbox_my = turf.bbox(line);
+    const bboxPolygon = turf.bboxPolygon(bbox_my);
 
-    const graphFromOsm = require('graph-from-osm');              // Import module
+    console.log(bbox_my);
+    console.log(JSON.stringify(bboxPolygon, null, 4));
 
-    const mySettings = {                                         // Define my settings
-      bbox: bbox_my,                          // Geographical rectangle
-      highways: ["primary", "secondary", "tertiary", "residential"],     // Type of roads to consider
-      timeout: 600000000, maxContentLength: 1500000000                   // OSM query parameters
-    }
+
+    const mySettings = {
+      // Define my settings
+      bbox: bbox_my, // Geographical rectangle
+      highways: ['primary', 'secondary', 'tertiary', 'residential'], // Type of roads to consider
+      timeout: 600000000,
+      maxContentLength: 1500000000, // OSM query parameters
+    };
 
     const generateGraph = async (settings) => {
-      console.log("osmData")
-      const osmData = await graphFromOsm.getOsmData(settings);   // Import OSM raw data
-      console.log(osmData)
-      const graph = graphFromOsm.osmDataToGraph(osmData)         // Here is your graph
-      console.log("Your graph contains " + graph.features.length + " nodes ans links.");
+      console.log('osmData');
+      const osmData = await graphFromOsm.getOsmData(settings); // Import OSM raw data
+      console.log(osmData);
+      const graph = graphFromOsm.osmDataToGraph(osmData); // Here is your graph
+      console.log(
+        'Your graph contains ' + graph.features.length + ' nodes ans links.',
+      );
       return graph;
-    }
+    };
 
-    var gr = generateGraph(mySettings);
+    const gr = generateGraph(mySettings);
 
     return gr;
   }
