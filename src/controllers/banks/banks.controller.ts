@@ -9,7 +9,6 @@ export class BanksController {
   constructor(private branchService: BranchService) {
   }
 
-
   @Post('search')
   async searchBranches(@Body('services') services: string[]) {
     try {
@@ -34,16 +33,19 @@ export class BanksController {
     }
   }
 
-  // @Post('find_optima_bank')
-  // async searchBranches(@Body('lat_me') lat: number, @Body('lng_me') lng: number) {
-  //   try {
-  //     const branches: Branch[] =
-  //       await this.branchService.findBranchesByServices(services); // TODO: service find optima bank
-  //     console.log(branches);
-  //   } catch (error) {
-  //     throw new Error('Unable to fetch branches.');
-  //   }
-  // }
+  @Post('find_optima_bank')
+  async searchOptimaBank(@Body('lat_me') lat: number, @Body('lng_me') lng: number, @Body('radius') radius: number) {
+    console.log("start search optima")
+    try {
+      return await this.branchService.findOptimalBank(
+        lat,
+        lng,
+        radius*1000,
+      );
+    } catch (error) {
+      throw new Error('Unable to fetch branches.');
+    }
+  }
 
   @Post('shortest_path')
   async calculate_shortest_path(@Body('lat_me') lat: number, @Body('lng_me') lng: number) {
