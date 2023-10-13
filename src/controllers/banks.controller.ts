@@ -1,8 +1,6 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { BranchService } from "../services/branch/branch.service";
 import { Branch } from "../entitiers/branch.entity";
-import {GraphManager} from "../graph/graph_manager";
-import {Graph, GraphEdge, GraphNode} from "../graph/systems";
 
 @Controller('banks')
 export class BanksController {
@@ -47,30 +45,8 @@ export class BanksController {
     }
   }
 
-  @Post('shortest_path')
+/*  @Post('shortest_path')
   async calculate_shortest_path(@Body('lat_me') lat: number, @Body('lng_me') lng: number) {
-    const graph = new Graph();
-    const graphManager = new GraphManager(graph);
-
-    // Добавляем узлы
-    const node1 = new GraphNode(1, 10, 20);
-    const node2 = new GraphNode(2, 20, 30);
-    const node3 = new GraphNode(3, 30, 40);
-
-    graphManager.addNode(node1);
-    graphManager.addNode(node2);
-    graphManager.addNode(node3);
-
-    const edge1 = new GraphEdge(node1, node2, 5);
-    const edge2 = new GraphEdge(node2, node3, 7);
-
-    graphManager.addEdge(edge1);
-    graphManager.addEdge(edge2);
-
-    console.log(graphManager.calculate_shortest_path(lat, lng));
-
-    return await graphManager.calculate_shortest_path(lat, lng);
-  }
 
   // Метод контроллера принимает входные аргументы долтоты и шиироты
   // Мы ищем в этой точке с searchBranchesRadius с радиусом R точки
@@ -79,5 +55,5 @@ export class BanksController {
   // Подсоединяем каждое отделение к ближайшему узлу, и присоединяем начальные координаты к ближайшему узлу。 Вес ребра - время обслуживния
   // shortestpath - алг дейкстры- ищем куда лучше
   // client: mapbox direction api - walk or automobile LineString
-
+*/
 }
