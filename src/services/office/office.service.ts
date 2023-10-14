@@ -48,61 +48,28 @@ export class OfficeService {
     }
   }
 
-  euclideanDistance(point1: [number, number], point2: [number, number]): number {
-    const [x1, y1] = point1;
-    const [x2, y2] = point2;
-    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-  }
 
-  calculateDistance([x1, y1]: number[], [x2, y2]: number[]): number {
-    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-  }
-
-  searchNearest(lat: number, lon: number, nodes: any[]): any {
-    let nearestNode = null;
-    let minDistance = Infinity;
-
-    for (const node of nodes) {
-      const nodeCoordinates = node.geometry.coordinates; // предполагается, что у узла есть поле geometry с координатами
-      const distance = this.euclideanDistance(nodeCoordinates, [lon, lat]);
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestNode = node;
-      }
+  async searchInBox(lng: number, lat: number, radius: number): Promise<Office[]>{
+    const tmp: Office[] = await this.officeRepo
+      .createQueryBuilder('office')
+      .select([
+        'office.id',
+        'office.address',
+        'office.location',
+        'office.loadFactor',
+      ])
+      .where(
+        `ST_DWithin(
+          office.location,
+          ST_MakePoint(:lng, :lat)::geography,
+          :radius
+        )`,
+        { lat, lng, radius },
+      )
+      .getMany();
+      return tmp
     }
 
-    return nearestNode;
-  }
-
-  findNearestNode(graph: any, coord: number[]): any {
-    let nearestNode = null;
-    let minDistance = Infinity;
-
-    for (const node of Object.values(graph.nodes)) {
-      const { lon, lat } = node as { lon: number, lat: number };
-      const distance = this.calculateDistance(coord, [lon, lat]);
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestNode = node;
-      }
-    }
-
-    return nearestNode;
-  }
-
-  weightCalc(path: GraphPathT): number {
-    let totalTime = 0; // общее время в секундах
-
-    for (let i = 0; i < path.length - 1; ++i) {
-      const node = path[i];
-      if (node.distanceToNext && node.speed) {
-        const timeToNextNode = node.distanceToNext / node.speed;
-        totalTime += timeToNextNode;
-      }
-    }
-
-    return totalTime;
-  }
 
   async findOptimalOffice(lng: number, lat: number, radius: number): Promise<Office[]>{
     const offices: Office[] = await this.officeRepo
@@ -148,14 +115,14 @@ export class OfficeService {
     // function searchNearest(lat:number, lon: number) -> можно в самом конце соединить граф с начальной точкой
     // соединить location к ближайшему узлу
     osmData.features
-    const nearestNode = this.searchNearest(lat, lng, osmData.features);
-    console.log(nearestNode);
+    //const nearestNode = this.searchNearest(lat, lng, osmData.features);
+   // console.log(nearestNode);
 
     // соединить каждый офис с ближайшим узлом на грфафе
     const officeToNodeMap: { [officeId: string]: any } = {};
 
     for (const office of offices) {
-      officeToNodeMap[office.id] = this.findNearestNode(graph, office.location.coordinates);
+      //officeToNodeMap[office.id] = this.findNearestNode(graph, office.location.coordinates);
     }
 
     // let pathsLength = []
@@ -173,21 +140,21 @@ export class OfficeService {
     let optimalPath: any = null;
 
     for (const officeId in officeToNodeMap) {
-      const startNode = nearestNode;  // ваша текущая позиция
+      //const startNode = nearestNode;  // ваша текущая позиция
       const endNode = officeToNodeMap[officeId];  // узел ближайший к офису
 
       // TODO: Вычислите путь от startNode до endNode.
       // Я предполагаю, что у вас есть функция graph.shortpath(), которая делает это.
-      const path = dijkstra(graph, startNode, endNode);
+      //const path = dijkstra(graph, startNode, endNode);
 
-      const timeInPath = this.weightCalc(await path);
-      pathsLength[officeId] = timeInPath;
-
-      if (timeInPath < shortestTime) {
-        shortestTime = timeInPath;
-        optimalOfficeId = officeId;
-        optimalPath = path;
-      }
+      // const timeInPath = this.weightCalc(await path);
+      // pathsLength[officeId] = timeInPath;
+      //
+      // if (timeInPath < shortestTime) {
+      //   shortestTime = timeInPath;
+      //   optimalOfficeId = officeId;
+      //   optimalPath = path;
+      // }
     }
 
     // Здесь optimalPath содержит наиболее короткий путь.

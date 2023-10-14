@@ -17,6 +17,20 @@ export class OfficeController {
     }
   }
 
+  @Post("search_in_box")
+  async searchInBox(@Body("lat") lat: number, @Body("lng") lng: number, @Body("radius") radius: number) {
+    try {
+      return await this.officeService.searchInBox(
+        lat,
+        lng,
+        radius * 1000,
+      );
+    } catch (error) {
+      console.log(error);
+      throw new Error("Unable to fetch branches.");
+    }
+  }
+
   @Post("search")
   async searchOptimaBank(@Body("lat") lat: number, @Body("lng") lng: number, @Body("radius") radius: number) {
     try {

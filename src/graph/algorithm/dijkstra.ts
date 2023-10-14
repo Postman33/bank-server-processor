@@ -12,7 +12,7 @@ export async function dijkstra(graph: any, start: GraphNodeT, end: GraphNodeT): 
     while (!queue.isEmpty()) {
         let currentNode = queue.pop();
 
-        if (currentNode!.id === end.id) {
+        if (currentNode.id === end.id) {
             let path: GraphPathT = [];
             while (currentNode) {
                 path.unshift(currentNode);
