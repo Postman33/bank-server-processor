@@ -5,11 +5,11 @@ import {Injectable} from "@nestjs/common";
 import {Office} from "../../entitiers/offices";
 import { dijkstra } from "../../graph/algorithm/dijkstra";
 import {GraphNodeT, GraphPathT} from "../../graph/systems";
-import { Feature } from "typeorm/driver/types/GeoJsonTypes";
 
 const turf = require('@turf/turf');
 const graphFromOsm = require('graph-from-osm'); // Import module
 const measure = require("../../distance");
+
 
 @Injectable()
 export class OfficeService {
@@ -61,8 +61,7 @@ export class OfficeService {
   searchNearest(lat: number, lon: number, nodes: any[]): any {
     let nearestNode = null;
     let minDistance = Infinity;
-    console.log('====');
-    console.log(nodes);
+
     for (const node of nodes) {
       const nodeCoordinates = node.geometry.coordinates; // предполагается, что у узла есть поле geometry с координатами
       const distance = this.euclideanDistance(nodeCoordinates, [lon, lat]);
@@ -78,8 +77,8 @@ export class OfficeService {
   findNearestNode(graph: any, coord: number[]): any {
     let nearestNode = null;
     let minDistance = Infinity;
-    graph.nodes = graph.features.filter( node => node.type === 'Feature' && node.geometry.type === 'Point')
-    for (const node of graph.nodes) {
+
+    for (const node of Object.values(graph.nodes)) {
       const { lon, lat } = node as { lon: number, lat: number };
       const distance = this.calculateDistance(coord, [lon, lat]);
       if (distance < minDistance) {
@@ -129,7 +128,7 @@ export class OfficeService {
     for (const office of offices){
         coords.push(office.location.coordinates)
     }
-    const lineString = turf.multiPoint(coords)
+    const lineString = turf.lineString(coords)
 
     const bbox = turf.bbox(lineString);
     const bboxPolygon =turf.transformScale(turf.bboxPolygon(bbox),1.2);
@@ -142,16 +141,15 @@ export class OfficeService {
     }
     const osmData = await graphFromOsm.getOsmData(mySettings);   // Import OSM raw data
 
-    console.log('OSM');
-    console.log(osmData.features);
+    console.log(osmData);
     const graph = graphFromOsm.osmDataToGraph(osmData)
 
     // TODO: функция определения ближайшего узла по координатам
     // function searchNearest(lat:number, lon: number) -> можно в самом конце соединить граф с начальной точкой
     // соединить location к ближайшему узлу
-
-    const nearestNode = this.searchNearest(lat, lng, graph.features as Feature[]);
-    //console.log(nearestNode);
+    osmData.features
+    const nearestNode = this.searchNearest(lat, lng, osmData.features);
+    console.log(nearestNode);
 
     // соединить каждый офис с ближайшим узлом на грфафе
     const officeToNodeMap: { [officeId: string]: any } = {};
@@ -203,4 +201,76 @@ export class OfficeService {
     // const lineStringResult = turf.lineString(optimalPath);
     // return lineStringResult;
   }
+
+   async findOptimalOffice2(lng: number, lat: number, radius: number): Promise<Office[]>{
+    const tmp: Office[] = await this.officeRepo
+      .createQueryBuilder('office')
+      .select([
+        'office.id',
+        'office.address',
+        'office.location',
+        'office.loadFactor',
+      ])
+      .where(
+        `ST_DWithin(
+          office.location,
+          ST_MakePoint(:lng, :lat)::geography,
+          :radius
+        )`,
+        { lat, lng, radius },
+      )
+      .getMany();
+
+    console.log("234432");
+
+    const coordinatesArray: any[] = [];
+    for (const item of tmp) {
+      console.log(item);
+      if (item.location.coordinates) {
+        coordinatesArray.push(item.location.coordinates);
+        console.log(item.location.coordinates);
+      }
+    }
+
+    const line = turf.lineString(coordinatesArray);
+    const bbox_my = turf.bbox(line);
+    const bboxPolygon = turf.bboxPolygon(bbox_my);
+
+//     console.log(bbox_my);
+//     console.log(JSON.stringify(bboxPolygon, null, 4));
+
+    const mySettings = {
+      // Define my settings
+      bbox: bbox_my, // Geographical rectangle
+      highways: ['primary', 'secondary', 'tertiary', 'residential'], // Type of roads to consider
+      timeout: 600000000,
+      maxContentLength: 1500000000, // OSM query parameters
+    };
+    const generateGraph = async (settings) => {
+      console.log('osmData');
+      const osmData = await graphFromOsm.getOsmData(settings); // Import OSM raw data
+      const graph = graphFromOsm.osmDataToGraph(osmData); // Here is your graph
+      console.log(
+        'Your graph contains ' + graph.features.length + ' nodes ans links.',
+      );
+      return graph;
+    };
+
+    const path = require('ngraph.path');
+
+    let graph = generateGraph(mySettings);
+
+    let pathFinder = path.aStar(graph); // graph is https://github.com/anvaka/ngraph.graph
+
+    // now we can find a path between two nodes:
+    let fromNodeId = 40;
+    let toNodeId = 42;
+
+    let foundPath = pathFinder.find(fromNodeId, toNodeId);
+
+console.log(foundPath)
+
+    return tmp;
+  }
+
 }

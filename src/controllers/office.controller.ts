@@ -30,6 +30,32 @@ export class OfficeController {
       throw new Error("Unable to fetch branches.");
     }
   }
+   @Post("search2")
+  async searchOptimaBank2(@Body("lat") lat: number, @Body("lng") lng: number, @Body("radius") radius: number) {
+    try {
+      return await this.officeService.findOptimalOffice2(
+        lat,
+        lng,
+        radius * 1000,
+      );
+    } catch (error) {
+      console.log(error);
+      throw new Error("Unable to fetch branches.");
+    }
+  }
 
 
+//    @Post("")
+//   async searchOptimaBank(@Body("lat") lat: number, @Body("lng") lng: number, @Body("radius") radius: number) {
+//     try {
+//       return await this.officeService.findBranchesInRadius(
+//         lat,
+//         lng,
+//         radius * 1000,
+//       );
+//     } catch (error) {
+//       console.log(error);
+//       throw new Error("Unable to fetch branches.");
+//     }
+//   }
 }
