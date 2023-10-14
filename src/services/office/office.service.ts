@@ -219,8 +219,18 @@ export class OfficeService {
         console.log(item.location.coordinates);
       }
     }
+      // TODO:
+     // Error: coordinates must be an array of two or more positions
+     // at Object.lineString (C:\Users\Lucky\WebstormProjects\bank-server-processor\node_modules\@turf\helpers\dist\js\index.js:294:15)
+     // at OfficeService.findOptimalOffice2 (C:\Users\Lucky\WebstormProjects\bank-server-processor\src\services\office\office.service.ts:210:23)
+     // at processTicksAndRejections (node:internal/process/task_queues:95:5)
+     // at OfficeController.searchOptimaBank2 (C:\Users\Lucky\WebstormProjects\bank-server-processor\src\controllers\office.controller.ts:50:14)
+     // at C:\Users\Lucky\WebstormProjects\bank-server-processor\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+     // at C:\Users\Lucky\WebstormProjects\bank-server-processor\node_modules\@nestjs\core\router\router-proxy.js:9:17
 
-    const line = turf.lineString(coordinatesArray);
+
+
+     const line = turf.lineString(coordinatesArray);
     const bbox_my = turf.bbox(line);
     const bboxPolygon = turf.bboxPolygon(bbox_my);
 
@@ -403,7 +413,8 @@ export class OfficeService {
             ]
           },
           properties: {
-            name: 'Bank to us'
+            name: 'Bank to us',
+            ...item
           }
         };
     }
