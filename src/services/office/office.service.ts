@@ -1,21 +1,20 @@
-import {Repository} from "typeorm";
-import {InjectRepository} from '@nestjs/typeorm';
-import * as fs from 'fs';
-import {Injectable} from "@nestjs/common";
-import {Office} from "../../entitiers/offices";
-import { dijkstra } from "../../graph/algorithm/dijkstra";
-import {GraphNodeT, GraphPathT} from "../../graph/systems";
+import { Repository } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import * as fs from "fs";
+import { Injectable } from "@nestjs/common";
+import { Office } from "../../entitiers/offices";
+import * as dijkstrajs from "dijkstrajs";
 
-const turf = require('@turf/turf');
-const graphFromOsm = require('graph-from-osm'); // Import module
+const turf = require("@turf/turf");
+const graphFromOsm = require("graph-from-osm"); // Import module
 const measure = require("../../distance");
-import * as dijkstrajs from 'dijkstrajs';
 
 @Injectable()
 export class OfficeService {
   constructor(
-    @InjectRepository(Office) private readonly officeRepo: Repository<Office>
-  ) {}
+    @InjectRepository(Office) private readonly officeRepo: Repository<Office>,
+  ) {
+  }
 
   async addOfficesFromFile() {
     //const filePath = path.join(__dirname, 'C:\\Users\\Lucky\\WebstormProjects\\bank-server-processor\\src\\offices.json', 'offices.json');
@@ -49,16 +48,27 @@ export class OfficeService {
   }
 
 
-  async searchInBox(lng: number, lat: number, radius: number): Promise<Office[]>{
+  async searchInBox(lng: number, lat: number, radius: number): Promise<Office[]> {
     const tmp: Office[] = await this.officeRepo
-      .createQueryBuilder('office')
+      .createQueryBuilder("office")
       .select([
-        'office.id',
-        'office.address',
-        'office.location',
-        'office.loadFactor',
-      ])
-      .where(
+        "office.id",
+        "office.address",
+        "office.location",
+        "office.loadFactor",
+        "office.salePointName",
+        "office.address",
+        "office.status",
+        "office.rko",
+        "office.officeType",
+        "office.salePointFormat",
+        "office.suoAvailability",
+        "office.hasRamp",
+        "office.metroStation",
+        "office.distance",
+        "office.kep",
+        "office.loadFactor",
+      ]).where(
         `ST_DWithin(
           office.location,
           ST_MakePoint(:lng, :lat)::geography,
