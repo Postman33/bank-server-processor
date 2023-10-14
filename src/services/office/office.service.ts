@@ -179,13 +179,26 @@ export class OfficeService {
     // return lineStringResult;
   }
 
-   async findOptimalOffice2(lng: number, lat: number, radius: number): Promise<any>{
+   async findOptimalOffice2(lng: number, lat: number, radius: number,
+                            //настройки банка
+                            rko: string
+//                             officeType:string, suoAvailability:boolean,
+//                             metroStation: string, hasRamp: boolean,
+//                             myBranch: boolean, loadFactor: number
+                            ): Promise<any> {
     const tmp: Office[] = await this.officeRepo
       .createQueryBuilder('office')
       .select([
         'office.id',
         'office.address',
         'office.location',
+        'office.loadFactor',
+        'office.rko',
+        'office.officeType',
+        'office.suoAvailability',
+        'office.metroStation',
+        'office.hasRamp',
+        'office.myBranch',
         'office.loadFactor',
       ])
       .where(
@@ -274,6 +287,9 @@ export class OfficeService {
     }
 
     for (const item of tmp) {
+        //убираем банки, неотвечающие условиям
+        if (rko == 'есть РКО' && item.rko == 'нет РКО' ) continue;
+
         let id_bank = -item.id;
         let coordinates = item.location.coordinates;
         console.log(id_bank);

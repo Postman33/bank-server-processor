@@ -45,12 +45,14 @@ export class OfficeController {
     }
   }
    @Post("search2")
-  async searchOptimaBank2(@Body("lat") lat: number, @Body("lng") lng: number, @Body("radius") radius: number) {
+  async searchOptimaBank2(@Body("lat") lat: number, @Body("lng") lng: number, @Body("radius") radius: number,
+  @Body("rko") rko: string) {
     try {
       return await this.officeService.findOptimalOffice2(
         lat,
         lng,
         radius * 1000,
+        rko,
       );
     } catch (error) {
       console.log(error);
