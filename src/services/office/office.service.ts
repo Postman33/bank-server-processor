@@ -179,7 +179,7 @@ export class OfficeService {
     // return lineStringResult;
   }
 
-   async findOptimalOffice2(lng: number, lat: number, radius: number): Promise<Office[]>{
+   async findOptimalOffice2(lng: number, lat: number, radius: number): Promise<any>{
     const tmp: Office[] = await this.officeRepo
       .createQueryBuilder('office')
       .select([
@@ -198,9 +198,9 @@ export class OfficeService {
       )
       .getMany();
 
+    /*находим дороги*/
     const coordinatesArray: any[] = [];
     for (const item of tmp) {
-      console.log(item);
       if (item.location.coordinates) {
         coordinatesArray.push(item.location.coordinates);
         console.log(item.location.coordinates);
@@ -229,8 +229,6 @@ export class OfficeService {
 
     let graphPath = await generateGraph(mySettings);
 
-    console.log(graphPath.features);
-
     const graph: dijkstrajs.Graph = {};
 
     for (const feature of graphPath.features){
@@ -251,20 +249,182 @@ export class OfficeService {
         sum+=Math.abs(el) // длина ребра
       }
 
-        graph[feature.tgt][feature.src] = sum;
-        graph[feature.src][feature.tgt] = sum;
+      graph[feature.tgt][feature.src] = sum;
+      graph[feature.src][feature.tgt] = sum;
     }
 
-    // Начальная и конечная точки пути.
-    const startPoint: dijkstrajs.Node = '8';
-    const endPoint: dijkstrajs.Node = '9';
+    /* добавляем дороги к отделениям и к центру */
+    // Функция для нахождения ближайшего узла к заданным координатам.
+    function findNearestNode(coordinates: number[]) {
+      let nearestNode;
+      let minDistance = Infinity;
 
-    // Вычисление кратчайшего пути с использованием алгоритма Дейкстры.
-    const shortestPath = dijkstrajs.find_path(graph, startPoint, endPoint);
+      for (const feature of graphPath.features) {
+        if (feature.geometry.type !== 'Point') continue
 
-    console.log('Кратчайший путь:', shortestPath);
+        const nodeCoordinates = feature.geometry.coordinates;
+        const distance = turf.distance(turf.point(nodeCoordinates), turf.point(coordinates));
 
-    return tmp;
+        if (distance < minDistance) {
+          nearestNode = feature;
+          minDistance = distance;
+        }
+      }
+      return nearestNode;
+    }
+
+    for (const item of tmp) {
+        let id_bank = -item.id;
+        let coordinates = item.location.coordinates;
+        console.log(id_bank);
+        console.log(coordinates);
+
+      //ищем точку присоединения и добавляем в граф
+      const nearestNode = findNearestNode(coordinates);
+      console.log(nearestNode);
+      if (nearestNode) {
+        console.log(`Ближайший узел к банку ${id_bank} (${coordinates[0]}, ${coordinates[1]})`);
+      }
+
+    //TODO: Мегаалгоритм по длинне пути до этой хуйни (нагрузку тут учитывать)!
+    let sum=Math.abs(measure(coordinates[0], coordinates[1],
+                    nearestNode.geometry.coordinates[0],
+                    nearestNode.geometry.coordinates[1])) // длина ребра
+
+      graph[id_bank] = {};
+      graph[id_bank][nearestNode.id] = sum;
+    }
+
+    /* Найди ближайшую точку к центру(мы) */
+      const nearestNode = findNearestNode([lng, lat]);
+      console.log(nearestNode);
+      if (nearestNode) {
+        console.log(`Ближайший узел к нам (${lng}, ${lat}) это ${nearestNode.geometry.coordinates[0]}, ${nearestNode.geometry.coordinates[1]}` );
+      }
+
+    // Функция для вычисления длины пути на основе графа и кратчайшего пути.
+    function calculatePathLength(graph, shortestPath) {
+      let pathLength = 0;
+
+      for (let i = 0; i < shortestPath.length - 1; i++) {
+        const startNode = shortestPath[i];
+        const endNode = shortestPath[i + 1];
+        const edgeWeight = graph[startNode][endNode];
+
+        if (edgeWeight === undefined) {
+          // Ребро отсутствует в графе, обработайте этот случай по вашему усмотрению.
+          console.error(`Ребро между ${startNode} и ${endNode} отсутствует в графе.`);
+          return null;
+        }
+
+        pathLength += edgeWeight;
+      }
+
+      return pathLength;
+    }
+
+    /* ищем кратчайший путь */
+
+    let minshortestPath;
+    let minshortestPath_len = Infinity;
+
+    for (const point in graph) {
+        if (point[0] !== '-') continue;
+        // Начальная и конечная точки пути.
+        const startPoint: dijkstrajs.Node = point; // обязательно id банка тут
+        const endPoint: dijkstrajs.Node = nearestNode.id;
+
+        // Вычисление кратчайшего пути с использованием алгоритма Дейкстры.
+        let shortestPath = Infinity
+        try {
+            shortestPath = dijkstrajs.find_path(graph, startPoint, endPoint);
+        } catch {
+            continue
+        }
+
+        console.log('Кратчайший путь:', shortestPath);
+        console.log(' Длинна кратчайшего пути:', calculatePathLength(graph, shortestPath));
+
+        if (minshortestPath_len > calculatePathLength(graph, shortestPath)) {
+            minshortestPath_len = calculatePathLength(graph, shortestPath);
+            minshortestPath = shortestPath;
+        }
+    }
+
+    console.log('Путь к отделению:', minshortestPath);
+    console.log(' Длинна кратчайшего к отделению пути:', minshortestPath_len);
+
+//путь от банка к нам
+    let geoJsonSequence = {
+      type: 'FeatureCollection',
+      features: [
+      ]
+    };
+
+//от банка к узлу ближайшему
+ let geoJsonPathFromBank
+
+    //TODO: от нас к узлу ближайшему
+    for (const item of tmp) {
+        let id_bank = (-item.id).toString();
+        if (id_bank !== minshortestPath[0]) continue;
+
+        let coordinates = item.location.coordinates;
+
+        const nearestNode = findNearestNode(coordinates);
+
+        console.log(id_bank);
+        geoJsonPathFromBank =
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              coordinates,
+              nearestNode.geometry.coordinates
+            ]
+          },
+          properties: {
+            name: 'Bank to us'
+          }
+        };
+    }
+
+    geoJsonSequence.features.push(geoJsonPathFromBank)
+
+    /* добавляем цепочку line */
+console.log("!!!!!!!!!!!!!!!!!!!!!!")
+    for (const i in minshortestPath) {
+        if (i == '0') continue
+        if (i == '1') continue
+
+        const strNumber = i; // Ваша строка с числом
+        const number = parseInt(strNumber, 10); // Преобразуем строку в число с основанием 10
+        const decreasedNumber = number - 1; // Уменьшаем число на 1
+        const decreasedStr = decreasedNumber.toString(); // Преобразуем результат обратно в строку
+
+        let point_id_before = minshortestPath[decreasedStr]
+        let point_id = minshortestPath[strNumber]
+
+        console.log("Ижем и добавляем путь из в")
+        console.log(point_id_before)
+        console.log(point_id)
+
+        for (const feature of graphPath.features) {
+          if (feature.geometry.type !== 'LineString') continue
+          if (feature.src.toString() !== point_id_before.toString()) continue
+          if (feature.tgt.toString() !== point_id.toString()) continue
+
+            geoJsonSequence.features.push(feature)
+        }
+    }
+
+
+    console.log(geoJsonSequence.features)
+    // Преобразуйте объект GeoJSON в строку, если это необходимо.
+    const geoJsonString = JSON.stringify(geoJsonSequence);
+
+    return geoJsonSequence;
   }
 
 }

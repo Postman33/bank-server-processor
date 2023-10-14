@@ -27,6 +27,7 @@
     "@turf/buffer": "^6.5.0",
     "@turf/collect": "^6.5.0",
     "@turf/turf": "^6.5.0",
+    "dijkstrajs": "^1.0.3",
     "graph-from-osm": "^1.0.0",
     "ngraph.graph": "^20.0.1",
     "ngraph.path": "^1.5.0",
