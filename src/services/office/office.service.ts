@@ -374,7 +374,8 @@ export class OfficeService {
     let geoJsonSequence = {
       type: 'FeatureCollection',
       features: [
-      ]
+      ],
+      bank_info: {}
     };
 
 //от банка к узлу ближайшему
@@ -385,6 +386,7 @@ export class OfficeService {
         let id_bank = (-item.id).toString();
         if (id_bank !== minshortestPath[0]) continue;
 
+        geoJsonSequence.bank_info = item;
         let coordinates = item.location.coordinates;
 
         const nearestNode = findNearestNode(coordinates);
@@ -437,6 +439,7 @@ console.log("!!!!!!!!!!!!!!!!!!!!!!")
 
 
     console.log(geoJsonSequence.features)
+    console.log(geoJsonSequence.bank_info)
     // Преобразуйте объект GeoJSON в строку, если это необходимо.
     const geoJsonString = JSON.stringify(geoJsonSequence);
 
