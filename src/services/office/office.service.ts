@@ -9,7 +9,7 @@ import {GraphNodeT, GraphPathT} from "../../graph/systems";
 const turf = require('@turf/turf');
 const graphFromOsm = require('graph-from-osm'); // Import module
 const measure = require("../../distance");
-
+import * as dijkstrajs from 'dijkstrajs';
 
 @Injectable()
 export class OfficeService {
@@ -188,8 +188,6 @@ export class OfficeService {
       )
       .getMany();
 
-    console.log("234432");
-
     const coordinatesArray: any[] = [];
     for (const item of tmp) {
       console.log(item);
@@ -203,11 +201,7 @@ export class OfficeService {
     const bbox_my = turf.bbox(line);
     const bboxPolygon = turf.bboxPolygon(bbox_my);
 
-//     console.log(bbox_my);
-//     console.log(JSON.stringify(bboxPolygon, null, 4));
-
     const mySettings = {
-      // Define my settings
       bbox: bbox_my, // Geographical rectangle
       highways: ['primary', 'secondary', 'tertiary', 'residential'], // Type of roads to consider
       timeout: 600000000,
@@ -223,19 +217,42 @@ export class OfficeService {
       return graph;
     };
 
-    const path = require('ngraph.path');
+    let graphPath = await generateGraph(mySettings);
 
-    let graph = generateGraph(mySettings);
+    console.log(graphPath.features);
 
-    let pathFinder = path.aStar(graph); // graph is https://github.com/anvaka/ngraph.graph
+    const graph: dijkstrajs.Graph = {};
 
-    // now we can find a path between two nodes:
-    let fromNodeId = 40;
-    let toNodeId = 42;
+    for (const feature of graphPath.features){
+        graph[feature.tgt] = {};
+        graph[feature.src] = {};
+    }
 
-    let foundPath = pathFinder.find(fromNodeId, toNodeId);
+    for (const feature of graphPath.features){
+      if (feature.geometry.type !== 'LineString') continue
+      let coors = feature.geometry.coordinates
 
-console.log(foundPath)
+      const distances=[]
+      for (let i = 0; i < coors.length - 2; i++){
+          distances.push(measure(coors[i][0],coors[i][1], coors[i+1][0],coors[i+1][1]))
+      }
+      let sum = 0
+      for (const el of distances){
+        sum+=Math.abs(el) // длина ребра
+      }
+
+        graph[feature.tgt][feature.src] = sum;
+        graph[feature.src][feature.tgt] = sum;
+    }
+
+    // Начальная и конечная точки пути.
+    const startPoint: dijkstrajs.Node = '8';
+    const endPoint: dijkstrajs.Node = '9';
+
+    // Вычисление кратчайшего пути с использованием алгоритма Дейкстры.
+    const shortestPath = dijkstrajs.find_path(graph, startPoint, endPoint);
+
+    console.log('Кратчайший путь:', shortestPath);
 
     return tmp;
   }
