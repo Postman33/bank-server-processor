@@ -1,5 +1,5 @@
 // atm.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, Point } from "typeorm";
+import { Column, Entity, Point, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Atm {
@@ -8,7 +8,6 @@ export class Atm {
 
   @Column()
   address: string;
-
 
   @Column({ type: 'geometry', nullable: true })
   location: Point;

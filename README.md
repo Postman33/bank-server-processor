@@ -27,6 +27,8 @@
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 ## Installation
+Предварительно нужен свой сервер СУБД PostGIS и также Node.js.
+Затем стандартные шаги.
 
 ```bash
 $ npm install

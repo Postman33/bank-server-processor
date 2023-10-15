@@ -2,12 +2,12 @@ import { Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as fs from "fs";
 import { Injectable } from "@nestjs/common";
-import { Office } from "../../entitiers/offices";
+import { Office } from "../entitiers/offices";
 import * as dijkstrajs from "dijkstrajs";
 
 const turf = require("@turf/turf");
 const graphFromOsm = require("graph-from-osm"); // Import module
-const measure = require("../../distance");
+const measure = require("../distance");
 
 @Injectable()
 export class OfficeService {
@@ -17,7 +17,6 @@ export class OfficeService {
   }
 
   async addOfficesFromFile() {
-    //const filePath = path.join(__dirname, 'C:\\Users\\Lucky\\WebstormProjects\\bank-server-processor\\src\\offices.json', 'offices.json');
     const filePath='C:\\Users\\Lucky\\WebstormProjects\\bank-server-processor\\src\\offices.json'
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const offices = JSON.parse(fileContent);
@@ -100,7 +99,6 @@ export class OfficeService {
       )
       .getMany();
 
-  // let location = {lng, lat}
     const coords = []
     for (const office of offices){
         coords.push(office.location.coordinates)
@@ -111,10 +109,10 @@ export class OfficeService {
     const bboxPolygon =turf.transformScale(turf.bboxPolygon(bbox),1.2);
     console.log(bboxPolygon);
 
-    const mySettings = {                                         // Define my settings
+    const mySettings = {
       bbox: bbox,                          // Geographical rectangle
-      highways: ["primary", "secondary", "tertiary", "residential"],     // Type of roads to consider
-      timeout: 600000000, maxContentLength: 1500000000                   // OSM query parameters
+      highways: ["primary", "secondary", "tertiary", "residential"],
+      timeout: 600000000, maxContentLength: 1500000000
     }
     const osmData = await graphFromOsm.getOsmData(mySettings);   // Import OSM raw data
 
@@ -145,9 +143,9 @@ export class OfficeService {
     // https://ru.wikipedia.org/wiki/GeoJSON
 
     const pathsLength: { [officeId: string]: number } = {};
-    let shortestTime = Infinity;
-    let optimalOfficeId: string | null = null;
-    let optimalPath: any = null;
+    const shortestTime = Infinity;
+    const optimalOfficeId: string | null = null;
+    const optimalPath: any = null;
 
     for (const officeId in officeToNodeMap) {
       //const startNode = nearestNode;  // ваша текущая позиция
@@ -175,8 +173,6 @@ export class OfficeService {
 
     return offices
 
-    // const lineStringResult = turf.lineString(optimalPath);
-    // return lineStringResult;
   }
 
    async findOptimalOffice2(lng: number, lat: number, radius: number,
@@ -232,9 +228,8 @@ export class OfficeService {
 
      const line = turf.lineString(coordinatesArray);
     const bbox_my = turf.bbox(line);
-    const bboxPolygon = turf.bboxPolygon(bbox_my);
-
-    const mySettings = {
+     turf.bboxPolygon(bbox_my);
+     const mySettings = {
       bbox: bbox_my, // Geographical rectangle
       highways: ['primary', 'secondary', 'tertiary', 'residential'], // Type of roads to consider
       timeout: 600000000,
@@ -250,7 +245,7 @@ export class OfficeService {
       return graph;
     };
 
-    let graphPath = await generateGraph(mySettings);
+     const graphPath = await generateGraph(mySettings);
 
     const graph: dijkstrajs.Graph = {};
 
@@ -261,7 +256,7 @@ export class OfficeService {
 
     for (const feature of graphPath.features){
       if (feature.geometry.type !== 'LineString') continue
-      let coors = feature.geometry.coordinates
+      const coors = feature.geometry.coordinates;
 
       const distances=[]
       for (let i = 0; i < coors.length - 2; i++){
@@ -297,13 +292,13 @@ export class OfficeService {
     }
 
     for (const item of tmp) {
-        //убираем банки, неотвечающие условиям
-        if (rko == 'есть РКО' && item.rko == 'нет РКО' ) continue;
+      //убираем банки, неотвечающие условиям
+      if (rko == "есть РКО" && item.rko == "нет РКО") continue;
 
-        let id_bank = -item.id;
-        let coordinates = item.location.coordinates;
-        console.log(id_bank);
-        console.log(coordinates);
+      const id_bank = -item.id;
+      const coordinates = item.location.coordinates;
+      console.log(id_bank);
+      console.log(coordinates);
 
       //ищем точку присоединения и добавляем в граф
       const nearestNode = findNearestNode(coordinates);
@@ -313,9 +308,9 @@ export class OfficeService {
       }
 
     //TODO: Мегаалгоритм по длинне пути до этой хуйни (нагрузку тут учитывать)!
-    let sum=Math.abs(measure(coordinates[0], coordinates[1],
-                    nearestNode.geometry.coordinates[0],
-                    nearestNode.geometry.coordinates[1])) // длина ребра
+      const sum = Math.abs(measure(coordinates[0], coordinates[1],
+        nearestNode.geometry.coordinates[0],
+        nearestNode.geometry.coordinates[1])); // длина ребра
 
       graph[id_bank] = {};
       graph[id_bank][nearestNode.id] = sum;
@@ -381,23 +376,22 @@ export class OfficeService {
     console.log(' Длинна кратчайшего к отделению пути:', minshortestPath_len);
 
 //путь от банка к нам
-    let geoJsonSequence = {
-      type: 'FeatureCollection',
-      features: [
-      ],
-      bank_info: {}
-    };
+     const geoJsonSequence = {
+       type: "FeatureCollection",
+       features: [],
+       bank_info: {},
+     };
 
 //от банка к узлу ближайшему
  let geoJsonPathFromBank
 
     //TODO: от нас к узлу ближайшему
     for (const item of tmp) {
-        let id_bank = (-item.id).toString();
+      const id_bank = (-item.id).toString();
         if (id_bank !== minshortestPath[0]) continue;
 
         geoJsonSequence.bank_info = item;
-        let coordinates = item.location.coordinates;
+      const coordinates = item.location.coordinates;
 
         const nearestNode = findNearestNode(coordinates);
 
@@ -424,37 +418,36 @@ export class OfficeService {
     /* добавляем цепочку line */
 console.log("!!!!!!!!!!!!!!!!!!!!!!")
     for (const i in minshortestPath) {
-        if (i == '0') continue
-        if (i == '1') continue
+      if (i == "0") continue;
+      if (i == "1") continue;
 
-        const strNumber = i; // Ваша строка с числом
-        const number = parseInt(strNumber, 10); // Преобразуем строку в число с основанием 10
-        const decreasedNumber = number - 1; // Уменьшаем число на 1
-        const decreasedStr = decreasedNumber.toString(); // Преобразуем результат обратно в строку
+      const strNumber = i; // Ваша строка с числом
+      const number = parseInt(strNumber, 10); // Преобразуем строку в число с основанием 10
+      const decreasedNumber = number - 1; // Уменьшаем число на 1
+      const decreasedStr = decreasedNumber.toString(); // Преобразуем результат обратно в строку
 
-        let point_id_before = minshortestPath[decreasedStr]
-        let point_id = minshortestPath[strNumber]
+      const point_id_before = minshortestPath[decreasedStr];
+      const point_id = minshortestPath[strNumber];
 
-        console.log("Ижем и добавляем путь из в")
-        console.log(point_id_before)
-        console.log(point_id)
+      console.log("Ижем и добавляем путь из в");
+      console.log(point_id_before);
+      console.log(point_id);
 
-        for (const feature of graphPath.features) {
-          if (feature.geometry.type !== 'LineString') continue
-          if (feature.src.toString() !== point_id_before.toString()) continue
-          if (feature.tgt.toString() !== point_id.toString()) continue
+      for (const feature of graphPath.features) {
+        if (feature.geometry.type !== "LineString") continue;
+        if (feature.src.toString() !== point_id_before.toString()) continue;
+        if (feature.tgt.toString() !== point_id.toString()) continue;
 
-            geoJsonSequence.features.push(feature)
-        }
+        geoJsonSequence.features.push(feature);
+      }
     }
 
 
-    console.log(geoJsonSequence.features)
-    console.log(geoJsonSequence.bank_info)
-    // Преобразуйте объект GeoJSON в строку, если это необходимо.
-    const geoJsonString = JSON.stringify(geoJsonSequence);
-
-    return geoJsonSequence;
-  }
+     console.log(geoJsonSequence.features);
+     console.log(geoJsonSequence.bank_info);
+     // Преобразуйте объект GeoJSON в строку, если это необходимо.
+     JSON.stringify(geoJsonSequence);
+     return geoJsonSequence;
+   }
 
 }

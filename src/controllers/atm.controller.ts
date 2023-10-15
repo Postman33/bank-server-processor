@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from "@nestjs/common";
-import { AtmService } from "../services/atm/atm.service";
+import { AtmService } from "../services/atm.service";
 
 @Controller('atm')
 export class AtmController {

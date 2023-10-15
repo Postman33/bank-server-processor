@@ -1,17 +1,14 @@
 import { Module } from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { BanksController } from "./controllers/banks.controller";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { Branch } from "./entitiers/branch.entity";
-import { BranchService } from './services/branch/branch.service';
 import { AtmController } from './controllers/atm.controller';
 import { OfficeController } from './controllers/office.controller';
 import { Atm } from "./entitiers/atms";
 import { Office } from "./entitiers/offices";
-import { Service } from "./entitiers/service";
-import { AtmService } from "./services/atm/atm.service";
-import { OfficeService } from "./services/office/office.service";
+
+import { AtmService } from "./services/atm.service";
+import { OfficeService } from "./services/office.service";
 
 @Module({
   imports: [
@@ -25,13 +22,13 @@ import { OfficeService } from "./services/office/office.service";
       //password: "123",
       //database: "vtb-hack",
       database: "postgis_db",
-      entities: [Branch, Atm, Office, Service],
+      entities: [ Atm, Office],
       synchronize: true,
     }),
-    TypeOrmModule.forFeature([Branch,Atm, Office, Service]),
+    TypeOrmModule.forFeature([Atm, Office]),
   ],
-  controllers: [AppController, BanksController, AtmController, OfficeController],
-  providers: [AppService, BranchService, AtmService, OfficeService],
+  controllers: [AppController, AtmController, OfficeController],
+  providers: [AppService, AtmService, OfficeService],
 })
 export class AppModule {
 }
